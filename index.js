@@ -7,66 +7,109 @@ const clearButton = document.getElementById('clear');
 let currentInput = '0';
 let firstOperand = null;
 let operator = null;
+let shouldResetDisplay = false;
+
+function updateDisplay() {
+  display.value = currentInput;
+}
 
 numberButtons.forEach(button => {
   button.addEventListener('click', () => {
-    if (currentInput === '0') {
-      currentInput = button.textContent;
-    } else {
-      currentInput += button.textContent;
+    if (currentInput === '0' || shouldResetDisplay) {
+      currentInput = '';
+      shouldResetDisplay = false;
     }
-    display.value = currentInput;
+    currentInput += button.textContent;
+    updateDisplay();
   });
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key >= '0' && event.key <= '9') {
+    if (currentInput === '0' || shouldResetDisplay) {
+      currentInput = '';
+      shouldResetDisplay = false;
+    }
+    currentInput += event.key;
+    updateDisplay();
+  } else if (['+', '-', '*', '/'].includes(event.key)) {
+    handleOperator(event.key);
+  } else if (event.key === 'Enter' || event.key === '=') {
+    calculateResult();
+  } else if (event.key === 'Escape') {
+    clearCalculator();
+  } else if (event.key === '.') {
+    addDecimal();
+  } else if (event.key === 'Backspace') {
+    deleteLastDigit();
+  }
 });
 
 operatorButtons.forEach(button => {
   button.addEventListener('click', () => {
-    if (operator && currentInput !== '0') {
-      firstOperand = operate(firstOperand, currentInput, operator);
-      currentInput = '0';
-      operator = button.textContent;
-    } else {
-      firstOperand = currentInput;
-      currentInput = '0';
-      operator = button.textContent;
-    }
+    handleOperator(button.textContent);
   });
 });
 
-equalButton.addEventListener('click', () => {
+function handleOperator(selectedOperator) {
+  if (operator && currentInput) {
+    firstOperand = operate(firstOperand, currentInput, operator);
+    currentInput = firstOperand;
+    updateDisplay();
+  } else {
+    firstOperand = currentInput;
+  }
+  operator = selectedOperator;
+  shouldResetDisplay = true;
+}
+
+function addDecimal() {
+  if (!currentInput.includes('.')) {
+    currentInput += '.';
+    updateDisplay();
+  }
+}
+
+function deleteLastDigit() {
+  currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
+  updateDisplay();
+}
+
+equalButton.addEventListener('click', calculateResult);
+
+function calculateResult() {
   if (firstOperand !== null && operator !== null) {
     currentInput = operate(firstOperand, currentInput, operator);
-    display.value = currentInput;
+    updateDisplay();
     firstOperand = null;
     operator = null;
   }
-});
+}
 
-clearButton.addEventListener('click', () => {
+clearButton.addEventListener('click', clearCalculator);
+
+function clearCalculator() {
   currentInput = '0';
   firstOperand = null;
   operator = null;
-  display.value = currentInput;
-});
+  updateDisplay();
+}
 
-// Basic arithmetic operations
 function operate(a, b, operator) {
   a = parseFloat(a);
   b = parseFloat(b);
   switch (operator) {
     case '+':
-      return a + b;
+      return (a + b).toString();
     case '-':
-      return a - b;
+      return (a - b).toString();
     case '*':
-      return a * b;
+      return (a * b).toString();
     case '/':
-      if (b !== 0) {
-        return a / b;
-      } else {
-        return 'Error';
-      }
+      return b !== 0 ? (a / b).toString() : 'Error';
     default:
       return 'Error';
   }
 }
+
+updateDisplay();
